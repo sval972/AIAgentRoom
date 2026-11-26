@@ -1,0 +1,42 @@
+[server]
+client_profile = "personal-codex"
+database = "agent-room.sqlite3"
+
+# Optional operator defaults and ceilings. Clients may request smaller limits.
+# [policy.room]
+# max_rounds = 3
+# max_total_tokens = 100000
+# max_estimated_usd = "1.00"
+# [policy.member]
+# max_turns = 3
+
+[endpoints.personal]
+provider = "azure_openai_chat"
+origin = "https://<your-existing-resource-host>"
+route = "v1"
+token_scope = "https://cognitiveservices.azure.com/.default"
+# For the deployment-qualified route, select "dated" and set api_version.
+# api_version = "<your-working-api-version>"
+
+[models.reviewer]
+enabled = true
+endpoint = "personal"
+deployment = "<your-existing-deployment-name>"
+input_bound_policy = "deployment_context_ceiling"
+context_tokens = 0 # Required: enter the verified deployment context limit.
+max_output_tokens = 0 # Required: enter a supported positive output cap.
+output_cap_field = "max_completion_tokens"
+
+[models.reviewer.profiles.standard]
+description = "Standard discussion"
+# reasoning_effort = "medium"
+# json_mode = true
+# instruction_role = "developer"
+
+# Set your deployment's actual rates before using a cost cap.
+# [models.reviewer.pricing]
+# revision = "<rate-card-date>"
+# currency = "USD"
+# input_per_million = "<rate>"
+# output_per_million = "<rate>"
+# cached_input_per_million = "<rate>"

@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-room"
+version = "0.1.0"
+description = "Local multi-agent discussion rooms for Codex and Foundry"
+requires-python = ">=3.12"
+dependencies = ["fastmcp>=2.14,<3", "azure-identity>=1.17,<2", "httpx>=0.27,<1", "aiohttp>=3.9,<4"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+
+[tool.setuptools]
+packages = ["agent_room"]
+
+[tool.setuptools.package-data]
+agent_room = ["schema.sql"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
