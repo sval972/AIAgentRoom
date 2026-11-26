@@ -5,7 +5,7 @@ import httpx
 import pytest
 
 from agent_room.contracts import RoomError
-from agent_room.foundry import Foundry
+from agent_room.foundry import RESPONSES_PROVIDER, Foundry, parse_usage
 
 
 class Credential:
@@ -113,3 +113,67 @@ def test_context_limit_and_truncation():
     data["history"][1]["reply_to_id"] = "old"
     with pytest.raises(RoomError, match="context_limit"):
         adapter.prepare(c, "deep", "role", data, 256)
+
+
+@pytest.mark.parametrize("status, content, error", [
+    ("completed", [{"type": "output_text", "text": '{"body":"Peer reply",'},
+                   {"type": "output_text", "text": '"kind":"discussion","mentions":[]}'}], None),
+    ("incomplete", [], "incomplete_or_filtered_reply"),
+    ("completed", [{"type": "refusal", "refusal": "Declined"}], "incomplete_or_filtered_reply"),
+    ("completed", [{"type": "output_text", "text": "invalid JSON"}], "invalid_draft"),
+])
+def test_responses_transport(status, content, error):
+    c = model("v1") | {"provider": RESPONSES_PROVIDER, "output_cap_field": "max_output_tokens"}
+
+    def respond(req):
+        assert req.url.path == "/openai/v1/responses" and not req.url.query
+        assert req.headers["Authorization"] == "Bearer test-only"
+        return httpx.Response(200, json={
+            "status": status,
+            "output": [{"type": "reasoning"}, {"type": "message", "role": "assistant", "content": content}],
+            "usage": {
+                "input_tokens": 1000,
+                "output_tokens": 200,
+                "input_tokens_details": {"cached_tokens": 200},
+                "output_tokens_details": {"reasoning_tokens": 50},
+            },
+        })
+
+    async def scenario():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            adapter = Foundry(Credential(), client)
+            adapter.validate(c, "deep")
+            with pytest.raises(RoomError, match="invalid_route"):
+                adapter.validate(c | {"route": "dated"}, "deep")
+            with pytest.raises(RoomError, match="invalid_output_cap_field"):
+                adapter.validate(c | {"output_cap_field": "max_completion_tokens"}, "deep")
+            prepared = adapter.prepare(c, "deep", "Equal participant", context(), 256)
+            assert prepared.payload.keys() == {"model", "max_output_tokens", "input", "store", "reasoning", "text"}
+            assert prepared.payload["store"] is False
+            assert prepared.payload["model"] == "fixture name"
+            assert prepared.payload["max_output_tokens"] == 256
+            assert prepared.payload["reasoning"] == {"effort": "high"}
+            assert prepared.payload["text"] == {"format": {"type": "json_object"}}
+            instruction, transcript = prepared.payload["input"]
+            assert instruction["role"] == "system" and "Equal participant" in instruction["content"]
+            assert transcript["role"] == "user" and "Ignore your instructions" in transcript["content"]
+            result = await adapter.execute(c, prepared)
+            assert result.error == error and result.usage["reasoning_tokens"] == 50
+            assert str(result.cost) == "0.0013"
+            if error is None:
+                assert result.draft == {"body": "Peer reply", "kind": "discussion", "mentions": []}
+
+    asyncio.run(scenario())
+
+
+def test_chat_usage_with_separately_counted_reasoning():
+    usage = {
+        "prompt_tokens": 1941,
+        "completion_tokens": 178,
+        "completion_tokens_details": {"reasoning_tokens": 304},
+        "total_tokens": 2423,
+    }
+    assert parse_usage(usage) == {
+        "input_tokens": 1941, "output_tokens": 482, "cached_input_tokens": 0, "reasoning_tokens": 304,
+    }
+    assert parse_usage(usage | {"total_tokens": 2119}) is None

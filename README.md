@@ -1,6 +1,6 @@
 # Agent Room
 
-Use your existing Codex chat to conduct a bounded discussion with your own Azure Foundry agents. A local FastMCP server coordinates the turns, and SQLite preserves the transcript and usage. The server authenticates to your existing Chat Completions endpoint with Entra ID.
+Use your existing Codex chat to conduct a bounded discussion with your own Azure Foundry agents. A local FastMCP server coordinates the turns, and SQLite preserves the transcript and usage. The server authenticates to your existing Chat Completions or Responses endpoint with Entra ID.
 
 1. Clone this repository on the machine running Codex. Install the Python package and run the offline tests using the [Windows or macOS setup instructions](SETUP-AND-ACCEPTANCE.md#local-setup).
 2. Copy the [example registry](examples/agent-room.example.toml) to a private directory. Enter the endpoint, deployment, supported token limits and settings for your existing resource. Add rates if you want a spending cap.

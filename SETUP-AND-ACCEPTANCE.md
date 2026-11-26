@@ -56,6 +56,8 @@ description = "Standard discussion"
 
 The zeros deliberately require replacement. The shipped parser must reject them with a field-specific diagnostic. The adapter accepts an allowlisted output parameter such as `max_completion_tokens` or `max_tokens` and sets it itself. On a deployment that supports it, a second profile such as `[models.reviewer.profiles.deep]` can declare `reasoning_effort = "high"`. Codex selects the profile ID. Register additional deployments under independent aliases. Codex discovers these aliases via `list_models` and can instantiate multiple identities from one alias.
 
+For a deployment using `/openai/v1/responses`, define an endpoint with `provider = "azure_openai_responses"` and `route = "v1"`, then point its model alias at that endpoint and set `output_cap_field = "max_output_tokens"`. Agent Room sends the conversation as input with `store = false` and keeps the room transcript in SQLite. [Microsoft Responses REST reference](https://learn.microsoft.com/en-us/rest/api/aifoundry/azureopenai/responses)
+
 For a USD budget, add a dated price card to the model entry. The following **fictional test rates** also define the offline accounting fixture. For live use, enter the rates and billing categories that apply to the authorized deployment. Preserve the card revision on each attempt. An unset rate is unknown. A conservative context ceiling can reserve considerably more than a short prompt uses, so use a verified tighter bound when a small budget requires it.
 
 ```toml

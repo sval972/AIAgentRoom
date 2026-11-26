@@ -8,7 +8,7 @@ from pathlib import Path
 from fastmcp import FastMCP
 
 from .core import RoomError, Rooms, require
-from .foundry import Foundry
+from .foundry import CHAT_PROVIDER, RESPONSES_PROVIDER, Foundry
 from .worker import Worker
 
 TOOLS = (
@@ -61,6 +61,7 @@ def configured_server(path):
 
     settings = read()["server"]
     adapter = Foundry()
+    adapters = {CHAT_PROVIDER: adapter, RESPONSES_PROVIDER: adapter}
 
     def load_models():
         cfg = read()
@@ -70,7 +71,7 @@ def configured_server(path):
                 continue
             endpoint = cfg["endpoints"][model["endpoint"]]
             c = dict(model, **endpoint)
-            require(c["provider"] == "azure_openai_chat", "unknown_provider")
+            require(c["provider"] in adapters, "unknown_provider")
             require(c["profiles"], "missing_profiles")
             for profile in c["profiles"]:
                 adapter.validate(c, profile)
@@ -92,7 +93,7 @@ def configured_server(path):
         database,
         settings["client_profile"],
         registry,
-        {"azure_openai_chat": adapter},
+        adapters,
         operator=read().get("policy"),
     )
 
