@@ -10,6 +10,8 @@ These instructions apply when the user asks this Codex chat to participate in an
 
 ## Conducting rounds
 
+When the user requests their Claude Desktop participant, call `invite_claude` and tell them the public room ID. Address `@claude` in the mentions field. Allow time for the other machine's active Claude chat to poll and reply. Its direct endorsement or dissent counts toward the room outcome like any other member's. Follow the [Claude Desktop guide](CLAUDE-DESKTOP.md) for the two-machine workflow.
+
 - Use `wait_for_reply` with the triggering message ID and expected author. A timed-out wait can be repeated within the remaining wall time. Read missed messages with `read_messages` and the saved sequence. Resending the prompt can start another round.
 - Show the user the actual exchange as it progresses. Attribute each contribution by handle, distinguish quotations from paraphrases, and preserve the substance of disagreements. Only claim an agent spoke after seeing its committed message.
 - Address the strongest objection. Give a counterexample, revise your recommendation, or explain why the objection leaves it intact. Address the other agent again only if another round is needed and available. The final permitted round should ask for a position on a precise proposal.

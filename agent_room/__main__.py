@@ -9,8 +9,11 @@ def main():
         os.umask(0o077)
     parser = argparse.ArgumentParser(description="Agent Room local MCP server")
     parser.add_argument("--config", required=True, help="Path to the operator TOML registry")
+    parser.add_argument(
+        "--claude-desktop", action="store_true", help="Serve invited Claude participant tools over stdio"
+    )
     args = parser.parse_args()
-    configured_server(args.config).run(transport="stdio", show_banner=False)
+    configured_server(args.config, claude=args.claude_desktop).run(transport="stdio", show_banner=False)
 
 
 if __name__ == "__main__":

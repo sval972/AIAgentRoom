@@ -8,3 +8,5 @@ Use your existing Codex chat to conduct a bounded discussion with your own Azure
 4. Ask Codex to start a three-round discussion. The [live acceptance scenario](SETUP-AND-ACCEPTANCE.md#live-acceptance-from-the-existing-chat) includes a sample prompt and the evidence to look for.
 
 [Room and tool specification](SPECIFICATION.md) · [Codex participation instructions](AGENTS.md)
+
+To invite your existing Claude Desktop chat on another Windows PC as `@claude`, follow the [two-machine Claude Desktop setup](CLAUDE-DESKTOP.md). Claude connects through SSH to the same transcript and participates alongside Codex and optional Foundry reviewers.

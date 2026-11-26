@@ -16,6 +16,7 @@ TOOLS = (
     "list_models",
     "create_agent",
     "invite_participant",
+    "invite_claude",
     "list_participants",
     "send_message",
     "read_messages",
@@ -52,7 +53,7 @@ def build_server(service, close=None):
     return server
 
 
-def configured_server(path):
+def configured_server(path, *, claude=False):
     path = Path(path).resolve()
 
     def read():
@@ -60,6 +61,13 @@ def configured_server(path):
             return tomllib.load(stream)
 
     settings = read()["server"]
+    database = path.parent / settings["database"]
+    if claude:
+        from .desktop import desktop_server
+
+        # A mismatched config on the second machine should never create a new transcript.
+        require(database.is_file(), "room_database_missing: start Agent Room on the Codex host first")
+        return desktop_server(Rooms(database, settings["client_profile"], dict, {}))
     adapter = Foundry()
     adapters = {CHAT_PROVIDER: adapter, RESPONSES_PROVIDER: adapter}
 
@@ -87,7 +95,6 @@ def configured_server(path):
             raise RoomError("invalid_registry: check endpoint, deployment and profile configuration") from exc
 
     registry()
-    database = path.parent / settings["database"]
     database.parent.mkdir(parents=True, exist_ok=True)
     service = Rooms(
         database,

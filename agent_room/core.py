@@ -130,7 +130,7 @@ class Rooms:
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA foreign_keys=ON")
         self.db.execute("PRAGMA journal_mode=WAL")
-        require(self.db.execute("PRAGMA user_version").fetchone()[0] <= 1, "unsupported_database_version")
+        require(self.db.execute("PRAGMA user_version").fetchone()[0] <= 2, "unsupported_database_version")
         schema = Path(__file__).with_name("schema.sql").read_text()
         self.db.executescript("BEGIN IMMEDIATE;\n" + schema + "\nCOMMIT;")
 
@@ -281,11 +281,32 @@ class Rooms:
         return self.db.execute("SELECT * FROM members WHERE room=? ORDER BY rowid", (room_id,)).fetchall()
 
     @transaction
+    def invite_claude(self, request_id: str, room_id: str, room_proof: str) -> dict:
+        """Grant your Claude Desktop connection transcript access and an @claude seat in this room."""
+        self.active(room_id)
+        member = self.one("SELECT agent FROM desktop_members WHERE room=?", (room_id,))
+        if member:
+            participant = member["agent"]
+        else:
+            require(
+                not self.one("SELECT 1 FROM members WHERE room=? AND handle='claude'", (room_id,)),
+                "membership_conflict: @claude is in use",
+            )
+            participant = uid()
+            self.db.execute("INSERT INTO members VALUES(?,?,?,?)", (room_id, participant, "claude", uid()))
+            self.db.execute("INSERT INTO desktop_members VALUES(?,?)", (room_id, participant))
+        return {"room_id": room_id, "participant_id": participant, "handle": "claude", "mode": "external"}
+
+    @transaction
     def list_participants(self, room_id: str, room_proof: str) -> dict:
         """List public identities, handles, execution profiles and session status."""
+        return self.roster(room_id)
+
+    def roster(self, room_id):
         result = []
         for m in self.members(room_id):
             agent = self.one("SELECT * FROM agents WHERE id=?", (m["agent"],))
+            desktop = not agent and m["agent"] != self.room(room_id)["chair"]
             job = self.one(
                 "SELECT status,expires FROM jobs WHERE room=? AND agent=? AND status IN "
                 "('dispatching','outcome_unknown')",
@@ -300,10 +321,12 @@ class Rooms:
                     "handle": m["handle"],
                     "session_id": m["session"],
                     "mode": "managed" if agent else "external",
-                    "alias": agent["alias"] if agent else "codex",
-                    "provider": agent["provider"] if agent else "codex_host",
+                    "alias": agent["alias"] if agent else m["handle"],
+                    "provider": agent["provider"]
+                    if agent
+                    else ("claude_desktop" if desktop else "codex_host"),
                     "deployment": agent["deployment"] if agent else "unknown",
-                    "name": agent["name"] if agent else "Codex",
+                    "name": agent["name"] if agent else ("Claude" if desktop else "Codex"),
                     "profile": agent["profile"] if agent else "unknown",
                     "status": status,
                     "limits": json.loads((agent or self.room(room_id))["limits"]),
@@ -381,6 +404,8 @@ class Rooms:
                 (rid, round_no, target),
             ):
                 status, reason = "suppressed", "already_addressed"
+            elif self.one("SELECT 1 FROM desktop_members WHERE room=? AND agent=?", (rid, target)):
+                status = "notified"
             self.db.execute(
                 "INSERT INTO jobs(id,room,trigger,agent,round,depth,status,reason,created) VALUES(?,?,?,?,?,?,?,?,?)",
                 (uid(), rid, mid, target, round_no or 0, depth + 1, status, reason, self.clock()),
@@ -406,6 +431,9 @@ class Rooms:
     @transaction
     def read_messages(self, room_id: str, room_proof: str, after_seq: int = 0, page_size: int = 50) -> dict:
         """Read a page of the persistent transcript after an exclusive sequence cursor."""
+        return self.transcript(room_id, after_seq, page_size)
+
+    def transcript(self, room_id, after_seq, page_size):
         require(after_seq >= 0 and 1 <= page_size <= 200, "invalid_page")
         rows = self.db.execute(
             "SELECT envelope FROM messages WHERE room=? AND seq>? ORDER BY seq LIMIT ?",

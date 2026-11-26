@@ -81,7 +81,7 @@ def report(s, room, agent):
         rid, pid = m["room"], m["agent"]
         entries = ledgers(s, rid, pid)
         stats = summarize(entries)
-        external = pid == s.room(rid)["chair"]
+        external = not s.one("SELECT 1 FROM agents WHERE id=?", (pid,))
         messages = s.one("SELECT COUNT(*) FROM messages WHERE room=? AND sender=?", (rid, pid))[0]
         count += messages
         if external:

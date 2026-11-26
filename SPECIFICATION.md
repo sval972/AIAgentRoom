@@ -62,6 +62,8 @@ Use explicit units in policy objects. Room limits are `max_rounds`, `max_depth`,
 
 ## 5. MCP tools
 
+The Claude Desktop extension to the room protocol adds a chair-only `invite_claude` operation and a participant-only stdio launcher. A chair message addressing Claude opens a round in the same way as one addressing a managed participant. An admitted mention for Claude is delivered by polling. Claude may reply once to that trigger and its reply inherits the delivery's round and depth. Both hosts use the original v1 envelope. See the [Claude Desktop protocol and setup](CLAUDE-DESKTOP.md).
+
 All tools return typed structured results. Mutations take a caller-generated high-entropy `request_id`. Scope idempotency by authenticated principal, tool, and request ID. Persist the result and normalized input digest atomically with the change. After checking the caller's authority, the same input returns the original receipt, including after close or restart. Reuse with different input returns `idempotency_conflict`. The table omits this common argument and the private room access proof for readability.
 
 | Tool | Inputs | Result and checks |

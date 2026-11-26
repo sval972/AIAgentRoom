@@ -25,4 +25,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS one_session_call ON jobs(room,agent)
 CREATE TABLE IF NOT EXISTS receipts(
  owner TEXT, tool TEXT, key TEXT, digest TEXT NOT NULL, result TEXT NOT NULL,
  PRIMARY KEY(owner,tool,key));
-PRAGMA user_version=1;
+CREATE TABLE IF NOT EXISTS desktop_members(
+ room TEXT PRIMARY KEY, agent TEXT NOT NULL UNIQUE,
+ FOREIGN KEY(room,agent) REFERENCES members(room,agent));
+PRAGMA user_version=2;
