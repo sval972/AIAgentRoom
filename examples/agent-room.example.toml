@@ -1,6 +1,8 @@
 [server]
 client_profile = "personal-codex"
 database = "agent-room.sqlite3"
+# Optional absolute Azure CLI profile directory shared by all local workers.
+# azure_config_dir = 'C:\Users\your-account\.azure'
 
 # Optional local Claude Code participant. The setup command can enable this independently of Foundry.
 # [models.claude]

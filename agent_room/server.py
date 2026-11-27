@@ -1,6 +1,7 @@
 """Local FastMCP transport and operator-controlled deployment registry."""
 
 import asyncio
+import os
 import tomllib
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -75,6 +76,16 @@ def configured_server(path, *, claude=False):
         # A mismatched config on the second machine should never create a new transcript.
         require(database.is_file(), "room_database_missing: start Agent Room on the Codex host first")
         return desktop_server(Rooms(database, settings["client_profile"], dict, {}))
+    # AzureCliCredential launches az as a child of this server. All its workers
+    # must use the operator's CLI profile even when the host omits USERPROFILE.
+    if "azure_config_dir" in settings:
+        directory = settings["azure_config_dir"]
+        require(
+            isinstance(directory, str) and Path(directory).is_absolute() and Path(directory).is_dir(),
+            "server.azure_config_dir must be an existing absolute directory",
+        )
+        os.environ["AZURE_CONFIG_DIR"] = directory
+
     factories = {CHAT_PROVIDER: Foundry, RESPONSES_PROVIDER: Foundry, CLAUDE_PROVIDER: ClaudeCLI}
     adapters = {}
 

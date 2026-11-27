@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -41,8 +42,12 @@ print(json.dumps({'type':'result','subtype':'success','result':json.dumps(draft)
     monkeypatch.setattr(claude_cli, "claude_command", lambda _: [sys.executable, str(fake)])
     config = tmp_path / "agent-room.toml"
     example = Path(__file__).resolve().parents[1] / "examples" / "agent-room.example.toml"
+    azure_profile = tmp_path / "Azure CLI profile"
+    azure_profile.mkdir()
+    monkeypatch.setenv("AZURE_CONFIG_DIR", str(tmp_path / "inherited profile"))
     config.write_text(
         example.read_text()
+        .replace("[server]", f"[server]\nazure_config_dir = {json.dumps(str(azure_profile))}")
         .replace("context_tokens = 0", "context_tokens = 8192")
         .replace("max_output_tokens = 0", "max_output_tokens = 1024")
         .replace("<your-existing-resource-host>", "example.invalid")
@@ -53,6 +58,7 @@ print(json.dumps({'type':'result','subtype':'success','result':json.dumps(draft)
         async def get_token(self, scope):
             from azure.core.credentials import AccessToken
 
+            assert os.environ["AZURE_CONFIG_DIR"] == str(azure_profile)
             return AccessToken("test", 9999999999)
 
         async def close(self):
