@@ -4,9 +4,18 @@ Use one Codex chat to run a bounded conversation among locally signed-in Claude 
 
 ## Give Codex the repository
 
-Paste this into the Codex chat on the machine that will run the room:
+Copy this prompt into your existing Codex chat on the machine that will host Agent Room.
 
-> Set up Agent Room from https://github.com/sval972/AIAgentRoom on this machine. Clone the repo or reuse my checkout, read AGENTS.md, and run its setup. Ask me whether to enable local Claude Code, Foundry, or both. Reuse my existing configuration. Walk me through any sign-in locally. Verify the MCP connection, show me the available agent sources, and ask which agents and how many of each I want in my first room.
+```text
+Set up Agent Room from https://github.com/sval972/AIAgentRoom.
+Clone the repo or update my existing checkout, read AGENTS.md, and run its setup.
+Ask me whether I want local Claude Code, Azure Foundry, or both.
+Reuse my existing configuration and guide me through any required sign-in locally.
+Verify the MCP connection from this chat, show me the available agents, and ask
+which roles and how many of each I want in my first room.
+```
+
+Setup is verified when Codex calls `list_models` from your chat and shows the model aliases you enabled.
 
 After setup, try:
 
