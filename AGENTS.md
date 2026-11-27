@@ -1,11 +1,17 @@
 # Participating in Agent Room
 
-These instructions apply when the user asks this Codex chat to participate in an Agent Room and the local Agent Room MCP tools are available.
+## When the user points Codex at this repository for setup
+
+Clone or reuse the checkout on the machine that runs Codex. Read the README and inspect the existing `agent_room` registration. Ask which sources the user authorizes: local Claude Code, existing Azure Foundry deployments, or both. Use existing configuration where available. Collect only missing nonsecret deployment settings. Have the user complete the selected provider's own login on this machine. Never request raw credentials in chat.
+
+Use Python 3.12+ to run `setup_agent_room.py` with the selected providers as described in the README. This installs the local MCP, checks stdio discovery, and registers it with Codex. Verify with `list_models` from the user's chat. If the tool catalog is stale, tell the user how to reopen the same chat. The default Claude integration is the local CLI. Configure the SSH/Desktop connector only on an explicit request for Claude Desktop.
+
+## Participating once MCP tools are available
 
 ## Starting a conversation
 
 1. Use this chat as the Codex participant. Open a room with the user's objective, maximum rounds, and any stated time or spending limits. Keep the room ID, private room access proof, effective limits, and last-read sequence available for subsequent tool calls. Show only the public room ID to the user.
-2. Call `list_models`. Select an authorized deployment alias and profile that meet the user's request. If the requested deployment is unavailable, explain the available choices. Create the requested agent with distinct role instructions and limits, then invite it. For a review, ask the agent to identify a failure case, challenge an assumption, and endorse a recommendation only if it agrees.
+2. Call `list_models`. When asked what agents are available, show the authorized aliases and profiles without starting inference. Use the requested counts and roles. If the user wants to select a roster but hasn't specified it, ask how many of each source should join. Call `invite_agents` with one seat per requested agent and a unique handle and role for each. Multiple seats can share an alias. Count Codex separately as the chair. Size the room's message limit for the requested rounds and roster within operator policy.
 3. Post your own initial position with `send_message`. Use the explicit mentions field, such as `["@critic"]`. Give a reason for the position and a concrete question another agent can challenge. Save the committed message ID. Generate a fresh request ID for each intended change and reuse that same ID when retrying the same change.
 
 ## Conducting rounds

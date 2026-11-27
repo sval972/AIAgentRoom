@@ -22,6 +22,7 @@ def admission(service, room, agent, settings, prepared):
         require(service.slot(room["id"], pid) < limits["max_messages"], "limit: max_messages")
         budget = remaining(limits, stats)
         if "tokens" in budget:
+            require(prepared.input_bound is not None, "provider_has_no_hard_token_bound")
             require(
                 prepared.input_bound + prepared.output_bound <= budget["tokens"], "limit: max_total_tokens"
             )
@@ -102,7 +103,9 @@ class Worker:
                 return False
             fence = uid()
             ledger = {
-                "reserved_tokens": prepared.input_bound + prepared.output_bound,
+                "reserved_tokens": (
+                    prepared.input_bound + prepared.output_bound if prepared.input_bound is not None else None
+                ),
                 "input_bound": prepared.input_bound,
                 "output_bound": prepared.output_bound,
                 "reserved_usd": str(prepared.reserved_usd) if prepared.reserved_usd is not None else None,
@@ -163,13 +166,17 @@ class Worker:
                     provider_request_id=result.request_id,
                 )
                 status, reason = "failed", result.error
-                if result.usage and (
-                    result.usage["input_tokens"] > ledger["input_bound"]
-                    or result.usage["output_tokens"] > ledger["output_bound"]
-                    or (
-                        result.cost is not None
-                        and ledger["reserved_usd"] is not None
-                        and result.cost > Decimal(ledger["reserved_usd"])
+                if (
+                    result.usage
+                    and ledger["input_bound"] is not None
+                    and (
+                        result.usage["input_tokens"] > ledger["input_bound"]
+                        or result.usage["output_tokens"] > ledger["output_bound"]
+                        or (
+                            result.cost is not None
+                            and ledger["reserved_usd"] is not None
+                            and result.cost > Decimal(ledger["reserved_usd"])
+                        )
                     )
                 ):
                     reason = "accounting_bound_exceeded"

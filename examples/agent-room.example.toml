@@ -2,6 +2,13 @@
 client_profile = "personal-codex"
 database = "agent-room.sqlite3"
 
+# Optional local Claude Code participant. The setup command can enable this independently of Foundry.
+# [models.claude]
+# provider = "claude_cli"
+# deployment = "default"
+# [models.claude.profiles.standard]
+# description = "Local Claude Code"
+
 # Optional operator defaults and ceilings. Clients may request smaller limits.
 # [policy.room]
 # max_rounds = 3

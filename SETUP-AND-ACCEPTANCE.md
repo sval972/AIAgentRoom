@@ -1,5 +1,7 @@
 # Agent Room setup and acceptance guide
 
+For the Codex-guided, single-machine setup with local Claude Code, Foundry, or both, start with the [copyable repository prompt](README.md#give-codex-the-repository). The steps below cover manual Foundry configuration and acceptance testing.
+
 Use this guide to install Agent Room, connect an existing Codex chat, and run the acceptance scenario on your machine. The room rules and tool contracts are in the [implementation specification](SPECIFICATION.md).
 
 ## Local setup

@@ -14,9 +14,18 @@ from decimal import Decimal, InvalidOperation
 from functools import wraps
 from hashlib import sha256
 from pathlib import Path
+from typing import NotRequired, TypedDict
 from uuid import UUID, uuid4
 
 from .contracts import Adapter, RoomError
+
+
+class Seat(TypedDict):
+    handle: str
+    alias: str
+    instructions: str
+    profile: NotRequired[str]
+    limits: NotRequired[dict]
 
 
 def uid():
@@ -223,6 +232,9 @@ class Rooms:
         limits: dict | None = None,
     ) -> dict:
         """Create an independent agent from an authorized deployment and profile."""
+        return self._create_agent(name, alias, profile, instructions, limits)
+
+    def _create_agent(self, name, alias, profile, instructions, limits):
         config = self.model(alias, profile)
         require(name.strip() and instructions.strip(), "missing_agent_name_or_instructions")
         defaults = MEMBER | {"max_output_tokens": min(1024, config["max_output_tokens"])}
@@ -261,6 +273,9 @@ class Rooms:
     ) -> dict:
         """Invite an owned managed participant. Invitation alone does not run it."""
         self.active(room_id)
+        return self._invite(room_id, agent_id, handle)
+
+    def _invite(self, room_id, agent_id, handle):
         handle = handle.removeprefix("@").lower()
         require(handle != "codex" and re.fullmatch("[a-z][a-z0-9_-]{0,63}", handle), "invalid_handle")
         require(
@@ -276,6 +291,24 @@ class Rooms:
             session = uid()
             self.db.execute("INSERT INTO members VALUES(?,?,?,?)", (room_id, agent_id, handle, session))
         return {"participant_id": agent_id, "session_id": session, "handle": handle}
+
+    @transaction
+    def invite_agents(self, request_id: str, room_id: str, room_proof: str, seats: list[Seat]) -> dict:
+        """Create and invite the requested roster atomically. Supply one handle, alias and role per seat."""
+        self.active(room_id)
+        require(seats, "empty_roster")
+        members = []
+        for seat in seats:
+            agent = self._create_agent(
+                seat["handle"],
+                seat["alias"],
+                seat.get("profile", "standard"),
+                seat["instructions"],
+                seat.get("limits"),
+            )
+            membership = self._invite(room_id, agent["agent_id"], seat["handle"])
+            members.append(agent | membership)
+        return {"participants": members}
 
     def members(self, room_id):
         return self.db.execute("SELECT * FROM members WHERE room=? ORDER BY rowid", (room_id,)).fetchall()

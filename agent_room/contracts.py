@@ -12,7 +12,7 @@ class RoomError(ValueError):
 @dataclass(frozen=True)
 class Prepared:
     payload: Any
-    input_bound: int
+    input_bound: int | None
     output_bound: int
     reserved_usd: Decimal | None
     truncated: bool = False
@@ -28,6 +28,9 @@ class Result:
 
 
 class Adapter(Protocol):
+    registry_defaults: dict
+
+    async def close(self) -> None: ...
     def validate(self, config: dict, profile: str) -> None: ...
     def prepare(
         self, config: dict, profile: str, instructions: str, context: dict, output_limit: int

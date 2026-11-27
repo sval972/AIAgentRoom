@@ -8,12 +8,15 @@ def summarize(ledgers):
     usage = {"input_tokens": 0, "output_tokens": 0, "cached_input_tokens": 0, "reasoning_tokens": 0}
     cost = Decimal(0)
     reserved = Decimal(0)
-    tokens = missing = unpriced = 0
+    tokens = missing = unpriced = unbounded = 0
     times = []
     for entry in ledgers:
         actual = entry.get("usage")
         if actual is None:
-            tokens += entry["reserved_tokens"]
+            if entry["reserved_tokens"] is None:
+                unbounded += 1
+            else:
+                tokens += entry["reserved_tokens"]
             reserved += Decimal(entry["reserved_usd"] or 0)
             missing += 1
         else:
@@ -30,6 +33,7 @@ def summarize(ledgers):
         **usage,
         turns=len(ledgers),
         reserved_tokens=tokens,
+        unbounded_usage_calls=unbounded,
         reserved_usd=str(reserved),
         measured_cost_usd=str(cost),
         estimated_cost_usd=None if unpriced or missing else str(cost),
